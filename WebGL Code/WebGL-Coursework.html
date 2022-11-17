@@ -1,0 +1,460 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>CM20219 – Coursework 2 – WebGL</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+		body {
+			margin: 0;
+			overflow: hidden;
+		}
+
+		canvas {
+			width: 100%;
+			height: 100%;
+		}
+	</style>
+</head>
+
+<body>
+	<script src="three-r134.js"></script>
+	<script src="OBJLoader.js"></script>
+	<script>
+		"use strict"; // https://stackoverflow.com/q/1335851/72470
+
+		// Global variables that are available in all functions.
+		// Note: You can add your own here, e.g. to store the rendering mode.
+		var camera, scene, renderer, mesh, x, y, z, cube, phongMaterial, basicMaterial, textureMaterials, rotX, rotY, rotZ, animation,
+			cardGeometry1, cardGeometry2, card1, card2, cardMaterial1, cardMaterial2, table, counter, toggle1, toggle2, toggle3, toggle4,
+			toggle5, toggle6, plane, materialPoint, points, OBJECTLoader, bunny, wireframe, point, wireframeMaterial, pointMaterial;
+		// Initialise the scene, and draw it for the first time.
+		init();
+		animate();
+
+		// Listen for keyboard events, to react to them.
+		// Note: there are also other event listeners, e.g. for mouse events.
+		document.addEventListener('keydown', handleKeyDown);
+
+		// Scene initialisation. This function is only run once, at the very beginning.
+		function init() {
+			rotX = false;
+			rotZ = false;
+			rotY = false;
+			toggle1 = false;
+			toggle2 = false;
+			toggle3 = false;
+			toggle4 = false;
+			toggle5 = false;
+			toggle6 = false;
+			OBJECTLoader = new THREE.OBJLoader();
+			counter = 0;
+			animation = false;
+			scene = new THREE.Scene();
+			x = 3;
+			y = 4;
+			z = 5;
+			// Set up the camera, move it to (3, 4, 5) and look at the origin (0, 0, 0).
+			camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+			camera.position.set(x, y, z);
+			camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+			// Draw a helper grid in the x-z plane (note: y is up).
+			scene.add(new THREE.GridHelper(10, 20, 0xffffff));
+
+			// TASK: Draw a cube (requirement 1).
+			const loader = new THREE.TextureLoader();
+			var geometry = new THREE.BoxGeometry(1,1,1);
+			cardGeometry1 = new THREE.BoxGeometry(1.125, 0.03, 1.75);
+			cardGeometry2 = new THREE.BoxGeometry(1.125, 0.03, 1.75);
+			//Texturing both of the card models
+			cardMaterial1 = [
+				new THREE.MeshBasicMaterial({map: loader.load('http://localhost:8000/Black.png')}),
+				new THREE.MeshBasicMaterial({map: loader.load('http://localhost:8000/Black.png')}),
+				new THREE.MeshBasicMaterial({map: loader.load('http://localhost:8000/CardBack.png')}),
+				new THREE.MeshBasicMaterial({map: loader.load('http://localhost:8000/Ah.png')}),
+				new THREE.MeshBasicMaterial({map: loader.load('http://localhost:8000/Black.png')}),
+				new THREE.MeshBasicMaterial({map: loader.load('http://localhost:8000/Black.png')}),
+			]
+			cardMaterial2 = [
+				new THREE.MeshBasicMaterial({map: loader.load('http://localhost:8000/Black.png')}),
+				new THREE.MeshBasicMaterial({map: loader.load('http://localhost:8000/Black.png')}),
+				new THREE.MeshBasicMaterial({map: loader.load('http://localhost:8000/CardBack.png')}),
+				new THREE.MeshBasicMaterial({map: loader.load('http://localhost:8000/As.png')}),
+				new THREE.MeshBasicMaterial({map: loader.load('http://localhost:8000/Black.png')}),
+				new THREE.MeshBasicMaterial({map: loader.load('http://localhost:8000/Black.png')}),
+			]
+			card1 = new THREE.Mesh(cardGeometry1, cardMaterial1);
+			card2 = new THREE.Mesh(cardGeometry2, cardMaterial2);
+			card1.name = 'Card';
+			card2.translateY(0.04);
+			const planeGeometry = new THREE.PlaneGeometry(10, 10);
+			const planeMaterial = new THREE.MeshPhongMaterial( {color: 0x00ff00, side: THREE.DoubleSide} );
+			plane = new THREE.Mesh(planeGeometry, planeMaterial);
+			plane.position.y += 0.1;
+			plane.rotation.x += Math.PI/2;
+			phongMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
+			basicMaterial = new THREE.MeshBasicMaterial({color: 0xff0000});
+			materialPoint = new THREE.PointsMaterial( { color: 0x0000ff, size : 0.2 });
+			points = new THREE.Points(geometry, materialPoint);
+			points.name = 'points';
+			textureMaterials = [
+				new THREE.MeshBasicMaterial({ map: loader.load('http://localhost:8000/Sid.png') }),
+				new THREE.MeshBasicMaterial({ map: loader.load('http://localhost:8000/Sasuke.png')}),
+				new THREE.MeshBasicMaterial({ map: loader.load('http://localhost:8000/Poker.png')}),
+				new THREE.MeshBasicMaterial({ map: loader.load('http://localhost:8000/Blackjack.png')}),
+				new THREE.MeshBasicMaterial({ map: loader.load('http://localhost:8000/Prequel.png')}),
+				new THREE.MeshBasicMaterial({ map: loader.load('http://localhost:8000/Duck.png')}),
+			];
+			cube = new THREE.Mesh(geometry, phongMaterial);
+			cube.receiveShadow = true;
+			cube.castShadow = true;
+			scene.add(cube);
+			// TASK: Visualise the axes of the global coordinate system (requirment 2).
+			const xMaterial = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+			const xPoints = [];
+			xPoints.push( new THREE.Vector3( -5, 0, 0 ) );
+			xPoints.push( new THREE.Vector3( 0, 0, 0 ) );
+			xPoints.push( new THREE.Vector3( 5, 0, 0 ) );
+			const xGeometry = new THREE.BufferGeometry().setFromPoints( xPoints );
+			const xLine = new THREE.Line( xGeometry, xMaterial );
+			scene.add(xLine);
+
+			const yMaterial = new THREE.LineBasicMaterial( { color: 0x00ff00 } );
+			const yPoints = [];
+			yPoints.push( new THREE.Vector3( 0, 0, 0 ) );
+			yPoints.push( new THREE.Vector3( 0, 5, 0 ) );
+			yPoints.push( new THREE.Vector3( 0, -5, 0 ) );
+			const yGeometry = new THREE.BufferGeometry().setFromPoints( yPoints );
+			const yLine = new THREE.Line( yGeometry, yMaterial );
+			scene.add(yLine);
+
+			const zMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+			const zPoints = [];
+			zPoints.push( new THREE.Vector3( 0, 0, 0 ) );
+			zPoints.push( new THREE.Vector3( 0, 0, 5 ) );
+			zPoints.push( new THREE.Vector3( 0, 0, -5 ) );
+			const zGeometry = new THREE.BufferGeometry().setFromPoints( zPoints );
+			const zLine = new THREE.Line( zGeometry, zMaterial );
+			scene.add(zLine);
+			// Basic ambient lighting.
+			// TASK: add more complex lighting for 'face' rendering mode (requirement 4).
+			//Adding shadows
+			const light = new THREE.DirectionalLight(0xffffff, 1);
+			light.castShadow = true;
+			light.position.set(3,3,-3);
+			light.shadowDarkness = 0.8;
+			light.shadowCameraVisible = true;
+			light.shadowCameraNear = 0;
+			light.shadowCameraFar = 3;
+
+			light.shadowCameraLeft = -5;
+			light.shadowCameraRight = 5;
+			light.shadowCameraTop = 5;
+			light.shadowCameraBottom = -5;
+			scene.add(light);
+			// Set up the Web GL renderer.
+			renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+			renderer.setPixelRatio(window.devicePixelRatio); // HiDPI/retina rendering
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			document.body.appendChild(renderer.domElement);
+
+			// Handle resizing of the browser window.
+			window.addEventListener('resize', handleResize, false);
+		}
+
+		// Handle resizing of the browser window.
+		function handleResize() {
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+		}
+
+		function rotateX(){
+			cube.rotation.x += 0.05;
+			points.rotation.x += 0.05;
+			if (scene.getObjectByName('bunny')) {
+				bunny.rotation.x += 0.05;
+			}
+		}
+		function rotateY(){
+			cube.rotation.y += 0.05;
+			points.rotation.y += 0.05;
+			if (scene.getObjectByName('bunny')) {
+				bunny.rotation.y += 0.05;
+			}		}
+		function rotateZ(){
+			cube.rotation.z += 0.05;
+			points.rotation.z += 0.05;
+			if (scene.getObjectByName('bunny')) {
+				bunny.rotation.z += 0.05;
+			}		}
+		// Animation loop function. This function is called whenever an update is required.
+		function animate() {
+			requestAnimationFrame(animate);
+			// TASK: This is a good place for code that rotates your cube (requirement 3).
+			var now = Date.now();
+			if (animation){
+				scene.remove(cube);
+				scene.add(card1);
+				scene.add(card2);
+				scene.add(plane);
+
+				//turn cards up
+				if (toggle1 && counter < 60){
+					card1.translateZ(0.1);
+					card2.translateZ(0.1);
+					card1.rotation.x -= Math.PI/2/60;
+					card2.rotation.x -= Math.PI/2/60;
+					counter++
+					}else if (toggle1 && counter >= 60){
+					counter = 0;
+					toggle2 = true;
+					toggle1 = false;
+				}
+				//rotate one card to show values
+				if (toggle2 && counter < 60){
+					if (counter === 0){
+						card1.position.z += 0.1
+					}
+					card2.rotation.y -= 0.01;
+					counter++;
+				} else if (toggle2 && counter >= 60){
+					counter = 0;
+					toggle2 = false;
+					toggle3 = true;
+				}
+				//stall
+				if (toggle3 && counter < 60){
+					var j=0;
+					j++;
+					counter++
+				} else if (toggle3 && counter >= 60){
+					counter = 0;
+					toggle3 = false;
+					toggle4 = true;
+				}
+				//rotate card back
+				if (toggle4 && counter < 60){
+					card2.rotation.y +=0.01
+					counter++;
+				} else if (toggle4 && counter >= 60){
+					counter = 0;
+					toggle4 = false;
+					toggle5 = true;
+				}
+				// rotate cards back down
+				if (toggle5 && counter < 60){
+					card1.rotation.x += Math.PI/2/60;
+					card2.rotation.x += Math.PI/2/60;
+					counter++;
+				} else if (toggle5 && counter >= 60){
+					counter = 0;
+					toggle5 = false;
+					toggle6 = true;
+				}
+				//fold the cards
+				if (toggle6 && counter < 30){
+					card1.position.z -= 5/30;
+					card2.position.z -= 5/30;
+					card2.position.y -= 3/30;
+					card1.position.y -= 3/30;
+					card1.rotation.y -= 0.3;
+					card2.rotation.y -= 0.3;
+					counter++;
+				} else if (toggle6 && counter >=30){
+					card2.position.y -= 0.1;
+					counter = 0;
+					toggle6 = false;
+					animation = false;
+				}
+
+			}
+			if (rotX){
+				rotateX();
+			}
+			if (rotY){
+				rotateY();
+			}
+			if (rotZ){
+				rotateZ();
+			}
+			// Render the current scene to the screen.
+			renderer.render(scene, camera);
+		}
+
+		// Handle keyboard presses.
+		function handleKeyDown(event) {
+			switch (event.key) {
+				// Render modes.
+				case 'f': // f = face
+					//alert('TASK: add code for face render mode (requirement 4).');
+					scene.remove(bunny);
+					if (scene.getObjectByName('points')){
+						scene.remove(points);
+						cube.material = phongMaterial;
+						cube.material.wireframe = false;
+						scene.add(cube);
+					}
+					if (scene.getObjectByName('Card')){
+						scene.remove(card1);
+						scene.remove(card2);
+						scene.remove(plane);
+						cube.material = phongMaterial;
+						cube.material.wireframe = false;
+						scene.add(cube);
+					}	else {
+						cube.material = phongMaterial;
+						cube.material.wireframe = false;
+					}
+					scene.add(cube);
+					break;
+
+				case 'e': // e = edge
+					//alert('TASK: add code for edge render mode (requirement 4).');
+						if (scene.getObjectByName('points')){
+							scene.remove(points);
+							cube.material = basicMaterial;
+							cube.material.wireframe = true;
+							scene.add(cube);
+						}
+					if (scene.getObjectByName('Card')){
+						scene.remove(card1);
+						scene.remove(card2);
+						scene.remove(plane);
+						cube.material = basicMaterial;
+						cube.material.wireframe = true;
+						scene.add(cube);
+					}
+					cube.material = basicMaterial;
+					cube.material.wireframe = true;
+					scene.add(cube);
+					break;
+				case 't': //Put the textures on the cube
+					scene.remove(bunny);
+					if (scene.getObjectByName('points')){
+						cube.material = textureMaterials;
+						scene.remove(points);
+						scene.add(cube);
+					}
+					if (scene.getObjectByName('Card')){
+						scene.remove(card1);
+						scene.remove(card2);
+						scene.remove(plane);
+						cube.material = textureMaterials;
+						scene.add(cube);
+					}
+					cube.material = textureMaterials;
+					scene.add(cube);
+					break;
+
+				case 'v': // v = vertex
+					//alert('TASK: add code for vertex render mode (requirement 4).');
+					scene.remove(bunny);
+					if (scene.getObjectByName('Card')){
+						scene.remove(card1);
+						scene.remove(card2);
+						scene.remove(plane);
+					}
+					scene.remove(cube);
+					scene.add(points);
+					break;
+
+				// TASK: add code for starting/stopping rotations (requirement 3).
+				case 'a': //move camera left
+					camera.translateX(-0.5)
+					break;
+				case 'w':	//move camera up
+					camera.translateY(0.5)
+					break;
+				case 's': //move camera down
+					camera.translateY(-0.5)
+					break;
+				case 'd': //move camera right
+					camera.translateX(0.5)
+					break;
+				case 'q': //move camera forward
+					camera.translateZ(-0.5)
+					break;
+				case 'p': //move camera backward
+					camera.translateZ(0.5)
+					break;
+				case 'x'://toggle x axis rotation
+					rotX = !(rotX);
+					break;
+				case 'y': //toggle y axis rotation
+					rotY = !(rotY);
+					break;
+				case 'z': //toggle z axis rotation
+					rotZ = !(rotZ);
+					break;
+				case 'c': //cool animation
+					scene.remove(bunny);
+					animation = true;
+					toggle1 = true;
+					card1.position.set(0, 0.1, 0);
+					card2.position.set(0, 0.14, 0);
+					card1.rotation.set(0, 0, 0);
+					card2.rotation.set(0, 0, 0);
+					x = 0;
+					y = 6;
+					z = 7;
+					camera.position.set(x, y, z);
+					camera.lookAt(0, 0, 0);
+					break;
+				case 'o': //load bunny
+					scene.remove(cube);
+					if (scene.getObjectByName('Card')){
+						scene.remove(card1);
+						scene.remove(card2);
+						scene.remove(plane);
+					}
+					if (scene.getObjectByName('points')){
+						scene.remove(points);
+					}
+					if (!(scene.getObjectByName('bunny'))) {
+						OBJECTLoader.load('./bunny-5000.obj',
+								function (object) {
+									object.traverse(function (child) {
+
+										if (child.isMesh) {
+											//Add the different render modes to the bunny
+											var wireframeGeometry = new THREE.WireframeGeometry(child.geometry);
+											wireframeMaterial = new THREE.LineBasicMaterial({color: 0xffffff});
+											pointMaterial = new THREE.PointsMaterial({ color: 0x0000ff, size : 0.02 });
+											wireframe = new THREE.LineSegments(wireframeGeometry, wireframeMaterial);
+											point = new THREE.Points(child.geometry, pointMaterial);
+											child.add(wireframe);
+											child.add(point);
+
+										}
+
+									});
+									bunny = object;
+									bunny.scale.set(0.2,0.2,0.2);
+									bunny.position.set(-0.2,0,0);
+									scene.add(bunny);
+									bunny.name = 'bunny';
+									wireframe.material.visible = false;
+									point.material.visible = false;
+									object.visible = true;
+								})
+					//Toggle between the different render modes
+					}else if (!(wireframe.material.visible) && !(point.material.visible)){
+						wireframe.material.visible = true;
+					}else if (wireframe.material.visible){
+						wireframe.material.visible = false;
+						point.material.visible = true;
+					}else{
+						point.material.visible = false;
+					}
+
+			}
+		}
+	</script>
+</body>
+
+
+</html>
